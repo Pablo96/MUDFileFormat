@@ -326,14 +326,16 @@ void MUDLoader::LoadASCII(const char * filePath, Model** model)
 
 	if (skeletonNode)
 	{
+		// ID sorted bone array
+		std::vector<Bone*> bonesArray;
+
 		// CREATE the root bone (skeleton must have a unique root bone!)
 		skeleton = new Bone();
 		auto rootNode = skeletonNode->FirstChildElement("bone");
 		helperBoneBuild(*skeleton, rootNode);
+		bonesArray.emplace_back(skeleton);
 		
 		// BUILD skeleton and bone array (should be sorted)
-		// ID sorted bone array
-		std::vector<Bone*> bonesArray;
 		skeletonBuild(rootNode->FirstChildElement("bone"), skeleton, bonesArray);
 
 		// SORT in case
