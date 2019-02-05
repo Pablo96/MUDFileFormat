@@ -1,0 +1,38 @@
+<!-- "model" tag define a 3d model :: REQUIRED-->
+<model name="modeltest">
+    <!-- "mesh" tag define a mesh :: REQUIRED at least one :: suport multiple meshes-->
+    <mesh name="meshname" vertexcount = "12">
+        <!-- "vertex" tag define the vertex of a mesh :: REQUIRED at least 1 -->
+        <vertex>
+            <!-- REQUIRED -->
+            <position value="3.0 2.0 5.0"/>
+            
+            <!-- OPTIONAL -->
+            <normal value="1.0 0.0 0.0"/>
+            
+            <!-- OPTIONAL :: ONLY SUPPORTS ONE UVCOORD -->
+            <uvcoord value="1.0 1.0"/>
+            
+            <!-- OPTIONAL :: BONES INDICES -->
+            <indices value="2 3 0 0"/>
+
+            <!-- OPTIONAL :: BONES WEIGHTS :: REQUIRED IF INDICES-->
+            <weights value="0.5 0.5 0.0 0.0"/>
+        </vertex>
+        
+        <!-- "indices" tag define the indices that form the faces :: REQUIRED -->
+        <indices count="7" value="0 1 2 3 5 4 1">
+    </mesh>
+    <!-- "skeleton" tag define a skeleton :: OPTIONAL :: REQUIRED IF ANIMATIONS IS DEFINED-->
+    <skeleton>
+        <bone id="0" translation="1.0 0.0 0.0" rotation="0.0 0.0 1.0 0.0" name="root">
+            <bone id="1" translation="1.0 0.0 0.0" rotation="0.0 0.0 1.0 0.0" name="arm">
+                <bone id="3" translation="1.0 0.0 0.0" rotation="0.0 0.0 1.0 0.0" name="forearm">
+                </bone>
+            </bone>
+            
+            <bone id="2" translation="1.0 0.0 0.0" rotation="0.0 0.0 1.0 0.0" name="neck">
+            </bone>
+        </bone>
+    </skeleton>
+</model>
