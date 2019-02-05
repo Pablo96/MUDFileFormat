@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <utility> //Pair
 
 namespace MUDLoader
 {
@@ -165,7 +166,7 @@ namespace MUDLoader
 	{
 		std::vector<Mesh> meshes;
 		Bone* skeleton = nullptr;
-		std::vector<mat4*> bonesTransformsArray;
+		std::vector<std::pair<mat4*, mat4*>> bindTransforms;
 	};
 
 	void LoadASCII(const char* filePath, Model** model);

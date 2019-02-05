@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iostream>
 #include <iterator>   // istream_iterator
+#include <algorithm> // sort
 
 void quaternionToMatrix(MUDLoader::quatd& q, MUDLoader::mat4& mat)
 {
@@ -204,7 +205,7 @@ void helperBoneBuild(MUDLoader::Bone& bone, tinyxml2::XMLElement* boneNode)
 	bone.inverseBindOffset = inverseMat4(bone.bindOffset);
 }
 
-void skeletonBuild(tinyxml2::XMLElement* node, MUDLoader::Bone* parent, std::vector<MUDLoader::mat4*>& array)
+void skeletonBuild(tinyxml2::XMLElement* node, MUDLoader::Bone* parent, std::vector<MUDLoader::Bone*>& array)
 {
 	for (auto siblingNode = node; siblingNode != nullptr; siblingNode = siblingNode->NextSiblingElement("bone"))
 	{
@@ -216,7 +217,7 @@ void skeletonBuild(tinyxml2::XMLElement* node, MUDLoader::Bone* parent, std::vec
 		boneTmp->parent = parent;
 
 		// Matrix array
-		array.emplace_back(&boneTmp->bindOffset);
+		array.emplace_back(boneTmp);
 
 		skeletonBuild(siblingNode->FirstChildElement("bone"), boneTmp, array);
 	}
@@ -321,17 +322,32 @@ void MUDLoader::LoadASCII(const char * filePath, Model** model)
 	tinyxml2::XMLElement* skeletonNode = modelNode->FirstChildElement("skeleton");
 	
 	Bone* skeleton = nullptr;
-	std::vector<mat4*> boneArray;
+	std::vector<std::pair<mat4*, mat4*>> transformsArray;
 
 	if (skeletonNode)
 	{
-		// build the root bone (skeleton must have a unique root bone!)
+		// CREATE the root bone (skeleton must have a unique root bone!)
 		skeleton = new Bone();
 		auto rootNode = skeletonNode->FirstChildElement("bone");
 		helperBoneBuild(*skeleton, rootNode);
 		
-		// build skeleton and transform array (should be sorted)
-		skeletonBuild(rootNode->FirstChildElement("bone"), skeleton, boneArray);
+		// BUILD skeleton and bone array (should be sorted)
+		// ID sorted bone array
+		std::vector<Bone*> bonesArray;
+		skeletonBuild(rootNode->FirstChildElement("bone"), skeleton, bonesArray);
+
+		// SORT in case
+		std::sort(bonesArray.rbegin(), bonesArray.rend(), [](Bone* bone1, Bone* bone2)
+		{
+			return bone1->id > bone2->id;
+		});
+
+		// BUILD transforms array
+		for (auto bone : bonesArray)
+		{
+			std::pair<mat4*, mat4*> pair(&bone->bindOffset, &bone->inverseBindOffset);
+			transformsArray.emplace_back(pair);
+		}
 	}
-	*model = new Model({ meshes, skeleton, boneArray });
+	*model = new Model({ meshes, skeleton, transformsArray });
 }
