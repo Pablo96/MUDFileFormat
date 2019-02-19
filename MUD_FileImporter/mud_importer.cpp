@@ -1,100 +1,8 @@
 #include "tinyxml2.h"
 #include "mud_importer.hpp"
-#include <sstream>
-#include <iostream>
-#include <iterator>   // istream_iterator
+#include <sstream>	//stringstream
+#include <iostream> // cout
 #include <algorithm> // sort
-
-void quaternionToMatrix(MUDLoader::quatd& q, MUDLoader::mat4& mat)
-{
-	mat.xx = 1 - 2 * q.y * q.y - 2 * q.z * q.z;
-	mat.xy = 2 * q.x * q.y - 2 * q.z * q.w;
-	mat.xz = 2 * q.x * q.z + 2 * q.y * q.w;
-
-	mat.yx = 2 * q.x * q.y + 2 * q.z * q.w;
-	mat.yy = 1 - 2 * q.x * q.x - 2 * q.z * q.z;
-	mat.yz = 2 * q.y * q.z - 2 * q.x * q.w;
-
-	mat.zx = 2 * q.x * q.z - 2 * q.y * q.w;
-	mat.zy = 2 * q.y * q.z + 2 * q.x * q.w;
-	mat.zz = 1 - 2 * q.x * q.x - 2 * q.y * q.y;
-
-	mat.wx = 0;
-	mat.wy = 0;
-	mat.wz = 0;
-	mat.ww = 1;
-}
-
-void translationToMatrix(MUDLoader::vec3& vec, MUDLoader::mat4& mat)
-{
-	mat.xw = vec.x;
-	mat.yw = vec.y;
-	mat.zw = vec.z;
-}
-
-MUDLoader::mat4 inverseMat4(const MUDLoader::mat4& matrix)
-{
-	using namespace MUDLoader;
-
-	decimal Coef00 = matrix.zz * matrix.ww - matrix.wz * matrix.zw;
-	decimal Coef02 = matrix.yz * matrix.ww - matrix.wz * matrix.yw;
-	decimal Coef03 = matrix.yz * matrix.zw - matrix.zz * matrix.yw;
-	
-	decimal Coef04 = matrix.zy * matrix.ww - matrix.wy * matrix.zw;
-	decimal Coef06 = matrix.yy * matrix.ww - matrix.wy * matrix.yw;
-	decimal Coef07 = matrix.yy * matrix.zw - matrix.zy * matrix.yw;
-	
-	decimal Coef08 = matrix.zy * matrix.wz - matrix.wy * matrix.zz;
-	decimal Coef10 = matrix.yy * matrix.wz - matrix.wy * matrix.yz;
-	decimal Coef11 = matrix.yy * matrix.zz - matrix.zy * matrix.yz;
-	
-	decimal Coef12 = matrix.zx * matrix.ww - matrix.wx * matrix.zw;
-	decimal Coef14 = matrix.yx * matrix.ww - matrix.wx * matrix.yw;
-	decimal Coef15 = matrix.yx * matrix.zw - matrix.zx * matrix.yw;
-	
-	decimal Coef16 = matrix.zx * matrix.wz - matrix.wx * matrix.zz;
-	decimal Coef18 = matrix.yx * matrix.wz - matrix.wx * matrix.yz;
-	decimal Coef19 = matrix.yx * matrix.zz - matrix.zx * matrix.yz;
-	
-	decimal Coef20 = matrix.zx * matrix.wy - matrix.wx * matrix.zy;
-	decimal Coef22 = matrix.yx * matrix.wy - matrix.wx * matrix.yy;
-	decimal Coef23 = matrix.yx * matrix.zy - matrix.zx * matrix.yy;
-
-	vec4 Fac0 = {Coef00, Coef00, Coef02, Coef03};
-	vec4 Fac1 = {Coef04, Coef04, Coef06, Coef07};
-	vec4 Fac2 = {Coef08, Coef08, Coef10, Coef11};
-	vec4 Fac3 = {Coef12, Coef12, Coef14, Coef15};
-	vec4 Fac4 = {Coef16, Coef16, Coef18, Coef19};
-	vec4 Fac5 = {Coef20, Coef20, Coef22, Coef23};
-
-	vec4 Vec0 = {matrix.yx, matrix.xx, matrix.xx, matrix.xx};
-	vec4 Vec1 = {matrix.yy, matrix.xy, matrix.xy, matrix.xy};
-	vec4 Vec2 = {matrix.yz, matrix.xz, matrix.xz, matrix.xz};
-	vec4 Vec3 = {matrix.yw, matrix.xw, matrix.xw, matrix.xw};
-
-	vec4 Inv0 = {Vec1 * Fac0 - Vec2 * Fac1 + Vec3 * Fac2};
-	vec4 Inv1 = {Vec0 * Fac0 - Vec2 * Fac3 + Vec3 * Fac4};
-	vec4 Inv2 = {Vec0 * Fac1 - Vec1 * Fac3 + Vec3 * Fac5};
-	vec4 Inv3 = {Vec0 * Fac2 - Vec1 * Fac4 + Vec2 * Fac5};
-
-	vec4 SignA = {+1, -1, +1, -1};
-	vec4 SignB = {-1, +1, -1, +1};
-	mat4 Inverse(Inv0 * SignA, Inv1 * SignB, Inv2 * SignA, Inv3 * SignB);
-
-	vec4 Row0;
-	Row0.x = Inverse[0].x;
-	Row0.y = Inverse[1].x;
-	Row0.z = Inverse[2].x;
-	Row0.w = Inverse[3].x;
-
-	vec4 Dot0(matrix[0] * Row0);
-	decimal Dot1 = (Dot0.x + Dot0.y) + (Dot0.z + Dot0.w);
-
-	decimal OneOverDeterminant = 1 / Dot1;
-
-	return Inverse * OneOverDeterminant;
-}
-
 
 void helperStrToVec3(const char* charArray, MUDLoader::vec3& vec)
 {
@@ -133,7 +41,7 @@ void helperStrToVec3(const char* charArray, MUDLoader::vec3& vec)
 	}
 }
 
-void helperStrToVec4(const char* charArray, MUDLoader::vec4& vec)
+void helperStrToQuat(const char* charArray, MUDLoader::quat& vec)
 {
 	std::string string(charArray);
 
@@ -184,8 +92,29 @@ void helperStrToVec4(const char* charArray, MUDLoader::vec4& vec)
 }
 
 
+
+
+
+MUDLoader::mat4 helperBuildInverseBindAbsolute(MUDLoader::Bone* bone)
+{
+	using namespace MUDLoader;
+
+	int i = 0;
+	mat4 transform = bone->bindOffset;
+
+	for (Bone* parent = bone->parent; parent != nullptr; parent = parent->parent)
+	{
+		transform = parent->bindOffset * transform;
+		i++;
+	}
+
+	return inverseMat4(transform);
+}
+
 void helperBoneBuild(MUDLoader::Bone& bone, tinyxml2::XMLElement* boneNode)
 {
+	using namespace MUDLoader;
+
 	auto translation = boneNode->FindAttribute("translation")->Value();
 	auto rotation = boneNode->FindAttribute("rotation")->Value();
 	auto name = boneNode->FindAttribute("name")->Value();
@@ -193,29 +122,32 @@ void helperBoneBuild(MUDLoader::Bone& bone, tinyxml2::XMLElement* boneNode)
 	bone.debugName = name;
 	bone.id = atoi(id);
 
-	MUDLoader::vec3 translationVec = MUDLoader::vec3();
+	vec3 translationVec = vec3();
 	helperStrToVec3(translation, translationVec);
 
-	MUDLoader::quatd rotationQuat = MUDLoader::quatd();
-	helperStrToVec4(rotation, rotationQuat);
+	quat rotationQuat;
+	helperStrToQuat(rotation, rotationQuat);
 
 	quaternionToMatrix(rotationQuat, bone.bindOffset);
 	translationToMatrix(translationVec, bone.bindOffset);
 
-	bone.inverseBindOffset = inverseMat4(bone.bindOffset);
+	bone.inverseBindOffset = helperBuildInverseBindAbsolute(&bone);
 }
+
 
 void skeletonBuild(tinyxml2::XMLElement* node, MUDLoader::Bone* parent, std::vector<MUDLoader::Bone*>& array)
 {
 	for (auto siblingNode = node; siblingNode != nullptr; siblingNode = siblingNode->NextSiblingElement("bone"))
 	{
 		MUDLoader::Bone* boneTmp = new MUDLoader::Bone();
-		helperBoneBuild(*boneTmp, siblingNode);
 		
 		// double linking
 		parent->children.emplace_back(boneTmp);
 		boneTmp->parent = parent;
-
+		
+		// bone data
+		helperBoneBuild(*boneTmp, siblingNode);
+		
 		// Matrix array
 		array.emplace_back(boneTmp);
 
@@ -322,7 +254,7 @@ void MUDLoader::LoadASCII(const char * filePath, Model** model)
 	tinyxml2::XMLElement* skeletonNode = modelNode->FirstChildElement("skeleton");
 	
 	Bone* skeleton = nullptr;
-	std::vector<std::pair<mat4*, mat4*>> transformsArray;
+	std::vector<tuple<int, mat4*, mat4*>> transformsArray;
 
 	if (skeletonNode)
 	{
@@ -347,9 +279,32 @@ void MUDLoader::LoadASCII(const char * filePath, Model** model)
 		// BUILD transforms array
 		for (auto bone : bonesArray)
 		{
-			std::pair<mat4*, mat4*> pair(&bone->bindOffset, &bone->inverseBindOffset);
+			int id;
+			if (bone->parent)
+				id = bone->parent->id;
+			else
+				id = -1;
+			tuple<int, mat4*, mat4*> pair = { id, &bone->bindOffset, &bone->inverseBindOffset };
 			transformsArray.emplace_back(pair);
 		}
 	}
 	*model = new Model({ meshes, skeleton, transformsArray });
+}
+
+
+void MUDLoader::quaternionToMatrix(quat& q, mat4& mat)
+{
+	mat = glm::toMat4(q);
+}
+
+void MUDLoader::translationToMatrix(vec3& vec, mat4& mat)
+{
+	mat4 location;
+	glm::translate(location, vec);
+	mat = location * mat;
+}
+
+MUDLoader::mat4 MUDLoader::inverseMat4(const mat4& matrix)
+{
+	return glm::inverse(matrix);
 }
