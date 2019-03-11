@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#define GLM_ENABLE_EXPERIMENTAL
 #include <GLM/glm.hpp>
 #include <GLM/gtx/quaternion.hpp>
 #include <GLM/gtc/matrix_transform.hpp>

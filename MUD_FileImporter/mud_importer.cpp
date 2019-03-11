@@ -1,3 +1,4 @@
+#include "ltpch.hpp"
 #include "tinyxml2.h"
 #include "mud_importer.hpp"
 #include <sstream>	//stringstream
@@ -300,7 +301,7 @@ void MUDLoader::quaternionToMatrix(quat& q, mat4& mat)
 void MUDLoader::translationToMatrix(vec3& vec, mat4& mat)
 {
 	mat4 location;
-	glm::translate(location, vec);
+	location = glm::translate(glm::mat4(1.0f), vec);
 	mat = location * mat;
 }
 

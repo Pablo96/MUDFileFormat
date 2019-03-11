@@ -141,7 +141,10 @@ def buildSkeletonRecursive(parentNode, bone, armature_obj):
 
     return bone_node
 
+#TODO: Apply axis rotation to armature!!
+#TODO: Fix bad export Z up-axis
 def buildSkeleton(obj, rot_matrix):
+#    obj.transform(rot_matrix.to_4x4())
     rootBone = getRootBone(obj)
     id = str(getBoneID(obj.bones, rootBone))
     matrix = rootBone.matrix_local
