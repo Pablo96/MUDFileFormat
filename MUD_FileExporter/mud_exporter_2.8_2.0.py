@@ -83,6 +83,9 @@ def buildMesh(obj, rot_matrix):
             normal  = PropTag('normal', value)
             vertexNode.children.append(normal)
             
+            #UV Coord
+            UVs = [layer.data[index] for layer in mesh.uv_layers]
+            
             #bones indices and weight
             if (len(vertex.groups) > 0 ):
                 groups = iter(vertex.groups)
