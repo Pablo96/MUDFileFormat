@@ -1,4 +1,5 @@
 import bpy
+import bmesh
 from mathutils import Matrix, Vector
 from math import radians
 #############################################################
@@ -58,14 +59,32 @@ def writeTag(file, tag, level):
 #TODO: Export UV map
 def buildMesh(obj, rot_matrix):
     mesh = obj.data
+    # Set split edges from uv seam
+    if not bpy.ops.uv.seams_from_islands.poll():
+        if not mesh.is_editmode:
+            bpy.ops.object.editmode_toggle()
+        bpy.ops.uv.seams_from_islands(mark_seams=True, mark_sharp=True)
+    
+    if mesh.is_editmode:
+        bpy.ops.object.editmode_toggle()
+    
+    # Split edges so one vertex per uv coord
+    bMesh = bmesh.new()
+    bMesh.from_mesh(mesh)
+    sharpEdges = [edge for edge in bMesh.edges if not edge.smooth]
+    bmesh.ops.split_edges(bMesh, edges = sharpEdges)
+    bMesh.to_mesh(mesh)
+    bMesh.free()
+    
     # Triangulate mesh faces
     mesh.calc_loop_triangles()
-    # To access faces use "mesh.loop_triangles"
     
     meshNode = NamedTag('mesh', mesh.name)
     meshNode.attributes.append('vertexcount')
     meshNode.values.append(str(len(mesh.vertices)))
     
+    
+    # Get Vertices
     for vertex in mesh.vertices:
         index = vertex.index
         vertexNode = Tag('vertex', ['id'], [str(vertex.index)])
@@ -116,6 +135,9 @@ def buildMesh(obj, rot_matrix):
     if len(mesh.uv_layers):
         # UV coords support only 1 uv_map (the active one)
         uv_layer = mesh.uv_layers.active
+        if not uv_layer:
+           print("No uv layer active\n")
+        
         # UV coords 
         uvValues = {}
 
@@ -206,7 +228,7 @@ def buildSkeleton(obj, rot_matrix):
     return skeleton_node
 
 
-def buildTree(modelName, selected_only, axis_up):
+def buildTree(context, modelName, selected_only, axis_up):
     rootNode = NamedTag('model', modelName)
 
     rot_matrix = Matrix.Identity(3)
@@ -219,7 +241,7 @@ def buildTree(modelName, selected_only, axis_up):
         obj = bpy.context.object
         rootNode.children.append(buildMesh(obj, rot_matrix))
     else:
-        scene = bpy.context.scene
+        scene = context.scene
         for obj in scene.objects:
             if obj.type == "ARMATURE":
                 rootNode.children.append(buildSkeleton(obj.data, rot_matrix))
@@ -236,7 +258,7 @@ def write_some_data(context, filepath, selected_only, axis_up):
     l = filepath.rfind('.')
     modelName = filepath[i+1:l]
     
-    tree = buildTree(modelName, selected_only, axis_up)
+    tree = buildTree(context, modelName, selected_only, axis_up)
     writeTag(f, tree, 0)
     
     f.close()
