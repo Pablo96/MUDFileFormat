@@ -1,12 +1,12 @@
 import bpy
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 from math import radians
 #############################################################
 #                   STRUCTURES                              #
 #############################################################
 
 class Tag:
-    def __init__(self, name, attributes, values):
+    def __init__(self, name, attributes , values):
         self.name = name
         self.attributes = attributes
         self.values = values
@@ -66,61 +66,99 @@ def buildMesh(obj, rot_matrix):
     meshNode.attributes.append('vertexcount')
     meshNode.values.append(str(len(mesh.vertices)))
     
-    for poly in mesh.polygons:
-        for index in poly.loop_indices:
-            vertex = mesh.vertices[index]
-            vertexNode = Tag('vertex', ['id'], [str(vertex.index)])
+    for vertex in mesh.vertices:
+        index = vertex.index
+        vertexNode = Tag('vertex', ['id'], [str(vertex.index)])
+        
+        #position
+        vertPos = rot_matrix @ vertex.co
+        value = str(vertPos.x) + ' ' + str(vertPos.y) + ' ' + str(vertPos.z)
+        position  = PropTag('position', value)
+        
+        vertexNode.children.append(position)
+        
+        
+        #normal
+        vertNormal = rot_matrix @ vertex.normal
+        value = str(vertNormal.x) + ' ' + str(vertNormal.y) + ' ' + str(vertNormal.z)
+        normal  = PropTag('normal', value)
+        
+        vertexNode.children.append(normal)
+                
+        
+        #bones indices and weight
+        if (len(vertex.groups) > 0 ):
+            groups = iter(vertex.groups)
+            firstG = next(groups)
             
-            #position
-            vertPos = rot_matrix @ vertex.co
-            value = str(vertPos.x) + ' ' + str(vertPos.y) + ' ' + str(vertPos.z)
-            position  = PropTag('position', value)
-            vertexNode.children.append(position)
+            value = str(firstG.group)
+            wValues = str(firstG.weight)
             
-            #normal
-            vertNormal = rot_matrix @ vertex.normal
-            value = str(vertNormal.x) + ' ' + str(vertNormal.y) + ' ' + str(vertNormal.z)
-            normal  = PropTag('normal', value)
-            vertexNode.children.append(normal)
+            for group in groups:
+                value += ' '
+                value += str(group.group)
+                wValues += ' '
+                wValues += str(group.weight)
             
-            #UV Coord
-            UVs = [layer.data[index] for layer in mesh.uv_layers]
+            indices = PropTag('indices', value)
+            weights = PropTag('weights', wValues)
             
-            #bones indices and weight
-            if (len(vertex.groups) > 0 ):
-                groups = iter(vertex.groups)
-                firstG = next(groups)
+        
+            vertexNode.children.append(indices)
+            vertexNode.children.append(weights)
+            
+        
+        
+        #add vertex to mesh node
+        meshNode.children.append(vertexNode)
+   
+    # Add UVs to the vertices only if it has to
+    if len(mesh.uv_layers):
+        # UV coords support only 1 uv_map (the active one)
+        uv_layer = mesh.uv_layers.active
+        # UV coords 
+        uvValues = {}
+
+        for tri in mesh.loop_triangles:
+            for loop_index in tri.loops:
+                uvCoord = uv_layer.data[loop_index].uv
+                # Duplicate vector and freeze it
+                uvCoord = Vector(uvCoord).freeze()
+                #Vector to tuple
+                uvCoord = uvCoord[:]
+                vertexIndex = mesh.loops[loop_index].vertex_index
+                uvValues[vertexIndex] = uvCoord
                 
-                value = str(firstG.group)
-                wValues = str(firstG.weight)
-                
-                for group in groups:
-                    value += ' '
-                    value += str(group.group)
-                    wValues += ' '
-                    wValues += str(group.weight)
-                
-                indices = PropTag('indices', value)
-                weights = PropTag('weights', wValues)
-                
-                vertexNode.children.append(indices)
-                vertexNode.children.append(weights)
-                
-            #add vertex to mesh node
-            meshNode.children.append(vertexNode)
+        # remove duplicated vectors
+        #uvValues = set(uvValues)
+        # check uvCoord count and vertex count
+        if len(uvValues.keys()) != int(meshNode.values[1]):
+            print("No UVs")
+
+        for key, uv in uvValues.items():
+            uvString = str(uv[0]) + " " + str(uv[1])
+            vertUV = PropTag('uvcoord', uvString)
+            vertex = meshNode.children[key]
+            vertex.children.append(vertUV)
+
+    else:
+        print("WARNING: model has no UVs\n")    
     
-    # mesh indices
+    #indices node
     indicesNode = Tag('indices', ['count', 'values'],\
-                  [str(len(mesh.loop_triangles) * 3), ""])
-    values = ""
+                  [str(len(mesh.loop_triangles) * 3)])
+    indicesValues = ""
     
+    ###########################################################
+    # Indices
     for triangle in mesh.loop_triangles:
         for index in triangle.vertices:
-            values += ' ' + str(index)
-    values = values[1:]
+            indicesValues += ' ' + str(index)
     
-    indicesNode.values[1] = values
+    # Cut the first space
+    indicesNode.values.append(indicesValues[1:])
     meshNode.children.append(indicesNode)
+
 
     return meshNode
 
@@ -221,6 +259,7 @@ class ExportSomeData(Operator, ExportHelper):
     """Export the selected model and armature to MUD Renderer format"""
     bl_idname = "export_mud_model.some_data"  # important since its how bpy.ops.import_test.some_data is constructed
     bl_label = "Export MUD model and skeleton"
+    bl_info = {"blender": (2, 80, 0)}
 
     # ExportHelper mixin class uses this
     filename_ext = ".mudm"
