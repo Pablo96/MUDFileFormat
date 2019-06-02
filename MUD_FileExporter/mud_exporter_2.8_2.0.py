@@ -166,13 +166,13 @@ def buildMesh(obj, rot_matrix):
     else:
         print("WARNING: model has no UVs\n")    
     
-    #indices node
+    ###########################################################
+    # Indices
+    # Node
     indicesNode = Tag('indices', ['count', 'values'],\
                   [str(len(mesh.loop_triangles) * 3)])
     indicesValues = ""
     
-    ###########################################################
-    # Indices
     for triangle in mesh.loop_triangles:
         for index in triangle.vertices:
             indicesValues += ' ' + str(index)
@@ -180,8 +180,41 @@ def buildMesh(obj, rot_matrix):
     # Cut the first space
     indicesNode.values.append(indicesValues[1:])
     meshNode.children.append(indicesNode)
-
-
+    
+    ###########################################################
+    # AABB
+    aabbNode = Tag('aabb', ['max_extent', 'min_extent'], [])
+    # 8x3 objects between -inf, inf
+    bound_box = [Vector(corner) for corner in obj.bound_box]
+    
+    max_x = max_y = max_z = 0.0
+    min_x = min_y = min_z = 0.0
+    
+    for i in range(8):
+        if bound_box[i].x > max_x:
+            max_x = bound_box[i].x
+        elif bound_box[i].x < min_x:
+            min_x = bound_box[i].x
+        
+        if bound_box[i].y > max_y:
+            max_y = bound_box[i].y
+        elif bound_box[i].y < min_y:
+            min_y = bound_box[i].y
+        
+        if bound_box[i].z > max_z:
+            max_z = bound_box[i].z
+        elif bound_box[i].z < min_z:
+            min_z = bound_box[i].z
+    
+    
+    maxExtent = str(max_x) + " " +str(max_y) + " " + str(max_z)
+    minExtent = str(min_x) + " " +str(min_y) + " " + str(min_z)
+    
+    aabbNode.values.append(maxExtent)
+    aabbNode.values.append(minExtent)
+    
+    meshNode.children.append(aabbNode)
+    
     return meshNode
 
 def getRootBone(armature_obj):
@@ -308,7 +341,7 @@ class ExportSomeData(Operator, ExportHelper):
             ('OPT_Y', "Y AXIS", "Y Axis as up vector"),
             ('OPT_X', "X AXIS", "X Axis as up vector"),
         ),
-        default='OPT_Z',
+        default='OPT_Y',
     )
 
     def execute(self, context):
