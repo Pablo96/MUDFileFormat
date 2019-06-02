@@ -57,10 +57,18 @@ namespace MUDLoader
 		vec4 weights = vec4(0);	//Bones weight. 1 per bone (4 total)
 	};
 
+	struct AABB
+	{
+		vec3 max_extent = vec3(0, 0, 0);
+		vec3 min_extent = vec3(0, 0, 0);
+	};
+
 	struct Mesh
 	{
 		std::vector<Vertex> vertices;
 		std::vector<unsigned int> indices;
+		AABB aabb;
+		bool hasAABB = false;
 	};
 
 	struct Model

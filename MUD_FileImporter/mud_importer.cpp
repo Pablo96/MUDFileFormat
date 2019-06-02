@@ -177,6 +177,10 @@ void MUDLoader::LoadASCII(const char * filePath, Model** model)
 
 	std::vector<Mesh> meshes;
 
+	//Warnings
+	bool normalWarn = false;
+	bool uvWarn = false;
+
 	// Meshes of the model
 	for (auto meshNode = modelNode->FirstChildElement("mesh");
 		meshNode != nullptr;
@@ -202,14 +206,44 @@ void MUDLoader::LoadASCII(const char * filePath, Model** model)
 			}
 
 			// Normal
-			text = vertexNode->FirstChildElement("normal")->FirstAttribute()->Value();
+			auto normalNode = vertexNode->FirstChildElement("normal");
+			if (!normalNode)
 			{
-				std::stringstream string(text);
-				string >> vertex.normal.x;
-				string >> vertex.normal.y;
-				string >> vertex.normal.z;
+				if (!normalWarn)
+				{
+					LT_CORE_WARN("Model: {0}:\tHas no normals", filePath);
+					normalWarn = !normalWarn;
+				}
 			}
-
+			else
+			{
+				text = normalNode->FirstAttribute()->Value();
+				{
+					std::stringstream string(text);
+					string >> vertex.normal.x;
+					string >> vertex.normal.y;
+					string >> vertex.normal.z;
+				}
+			}
+			// UV Coord
+			auto uvNode = vertexNode->FirstChildElement("uvcoord");
+			if (!uvNode)
+			{
+				if (!uvWarn)
+				{
+					LT_CORE_WARN("Model: {0}:\tHas no UVs", filePath);
+					uvWarn = !uvWarn;
+				}
+			}
+			else
+			{
+				text = uvNode->FirstAttribute()->Value();
+				{
+					std::stringstream string(text);
+					string >> vertex.uvCoord.x;
+					string >> vertex.uvCoord.y;
+				}
+			}
 			// Bone Indices
 			auto hasIndices = vertexNode->FirstChildElement("indices");
 			if (hasIndices)
@@ -232,6 +266,7 @@ void MUDLoader::LoadASCII(const char * filePath, Model** model)
 					string >> vertex.weights.w;
 				}
 			}
+
 			vertices.emplace_back(vertex);
 		}
 
@@ -247,7 +282,29 @@ void MUDLoader::LoadASCII(const char * filePath, Model** model)
 			indices.emplace_back(index);
 		}
 
-		meshes.emplace_back(Mesh({ vertices, indices }));
+		// Mesh AABB
+		AABB aabb;
+		tinyxml2::XMLElement* aabbNode = meshNode->FirstChildElement("aabb");
+		if (aabbNode)
+		{
+			auto maxExtStr = aabbNode->FindAttribute("max_extent")->Value();
+			std::stringstream maxStream(maxExtStr);
+			maxStream >> aabb.max_extent.x;
+			maxStream >> aabb.max_extent.y;
+			maxStream >> aabb.max_extent.z;
+			
+			auto minExtStr = aabbNode->FindAttribute("min_extent")->Value();
+			std::stringstream minStream(minExtStr);
+			minStream >> aabb.min_extent.x;
+			minStream >> aabb.min_extent.y;
+			minStream >> aabb.min_extent.z;
+
+
+		}
+		else
+			LT_WARN("Model {0} mesh {1} has not aabb", filePath, meshNode->FindAttribute("name")->Value());
+		
+		meshes.emplace_back(Mesh({ vertices, indices, aabb, aabbNode != nullptr }));
 	}
 
 	// Skeleton of the model
