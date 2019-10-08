@@ -271,8 +271,9 @@ def buildTree(context, modelName, selected_only, axis_up):
         rot_matrix = Matrix.Rotation(radians(90), 3, 'Y')
     
     if (selected_only == True):
-        obj = bpy.context.object
-        rootNode.children.append(buildMesh(obj, rot_matrix))
+        objs = bpy.context.selected_objects
+        for obj in objs:
+            rootNode.children.append(buildMesh(obj, rot_matrix))
     else:
         scene = context.scene
         for obj in scene.objects:
