@@ -273,7 +273,10 @@ def buildTree(context, modelName, selected_only, axis_up):
     if (selected_only == True):
         objs = bpy.context.selected_objects
         for obj in objs:
-            rootNode.children.append(buildMesh(obj, rot_matrix))
+            if obj.type == "ARMATURE":
+                rootNode.children.append(buildSkeleton(obj.data, rot_matrix))
+            elif obj.type == "MESH":
+                rootNode.children.append(buildMesh(obj, rot_matrix))
     else:
         scene = context.scene
         for obj in scene.objects:
