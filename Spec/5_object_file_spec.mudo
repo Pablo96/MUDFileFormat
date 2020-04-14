@@ -1,0 +1,20 @@
+/*
+This is not a real comment json dont support comments!
+Bullet3d Shapes codes:
+Sphere          0
+Box             1
+Capsule         2
+Cylinder        3
+Cone            4
+StaticPlane     5
+CompoundShape   6
+*/
+{
+    "object_type" : "Vehicle",
+    "custom_param" : 2,
+    "custom_param2" : 55.2,
+    "custom_param3" : true,
+    "custom_param_object" : {
+        "custom_param_4" : 94
+    }
+}

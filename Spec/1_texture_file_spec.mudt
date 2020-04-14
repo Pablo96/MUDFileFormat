@@ -1,0 +1,13 @@
+<!-- texture tag :: REQUIRED -->
+<texture url="../resources/textures/grass.png">
+    <!-- texture_def tag :: OPTIONAL
+      - if not texture_def tag it will take
+      - default values (listed in the example) -->
+    <texture_def>
+      <mipmap value="true"/>
+      <image_Format value="RGB_24"/>
+      <border value="REPEATED"/>
+      <border_color value="0, 0, 0, 0"/>
+    </texture_def>
+</texture>
+

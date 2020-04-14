@@ -1,0 +1,66 @@
+<!-- "scene" tag define a scene :: REQUIRED -->
+<!-- defines a 3d scene -->
+<scene name="scenetest">
+    <!-- List of models to be loaded :: REQUIRED -->
+    <meshes>
+        <!-- List can be empty and just define a graph of empty nodes -->
+        <model name="model 1" url="./model1.mudm"/>
+        <model name="model 2" url="./model2.ltbm"/>
+        <model name="model 3" url="./model2.ltbm"/>
+    </meshes>
+    
+    <!-- List of materials available :: OPTIONAL -->
+    <!-- if no material list the default material will be the only available -->
+    <materials>
+        <material name="material 1" url="./material1.mud"/>
+        <material name="material 2" url="./material2.ltmat"/>
+        <material name="material 3" url="./material2.ltmat"/>
+    </materials>
+
+    <!-- List of game objects (RenderableObject, RederablePhysicsObjects, CameraObject and Custom) :: REQUIRED -->
+    <objects>
+        <!-- RenderableObjects examples -->
+        <object name="Crate" mesh="model 1" material="material1"/>
+        <object name="CartonBox" mesh="model 1" material="material2"/>
+        <object name="CarontBall" mesh="model 2" material="material2"/>
+        
+        <!-- RederablePhysicsObjects examples -->
+        <object name="Barrel" mesh="model 3" material="material 3" shape="CYLINDER" mass="1.0"/>
+
+        <!-- Custom objects examples -->
+        <!-- The config file have all the custom params defined in json format -->
+        <!-- *.config file extention :: REQUIRED -->
+        <object class="Player" config="Player.lto">
+        <object Class="Vehicle" config="Vehicle_Car.lto">
+        <object Class="Vehicle" config="Vehicle_Bus.mudo">
+
+        <!-- Cameras object is default defined -->
+        <object name="Camera1" fov="60.0f" min="0.1" max="1000.0"/>
+    </objects>
+    
+    <!-- Scene graph tree that define nodes relationships :: REQUIRED -->
+    <graph>
+        <!-- object parameter can be empty :: object="" -->
+        <node name="Player_node" position="0.0 0.0 0.0" rotation="0.0 0.0 0.0" object="Player">            
+            <node name="Camera_node" position="0.0 2.0 5.0" rotation="0.0 0.0 0.0" object="Camera1">
+            </node>
+        </node>
+        
+        <node name="Barrel_1" position="10.0 5.0 0.0" rotation="0.0 0.0 0.0" object="Barrel">
+        </node>
+        <node name="Barrel_2" position="-10.0 5.0 0.0" rotation="0.0 0.0 0.0" object="Barrel">
+        </node>
+        <node name="Barrel_3" position="0.0 5.0 10.0" rotation="90.0 0.0 0.0" object="Barrel">
+        </node>
+
+        <node name="Crate_1" position="0.0 1.0 0.0" rotation="0.0 0.0 0.0 0.0" object="Crate">
+        </node>
+        <node name="Crate_2" position="15.0 1.0 0.0" rotation="0.0 0.0 0.0 0.0" object="Crate">
+        </node>
+        <node name="Crate_3" position="15.0 1.0 5.0" rotation="0.0 0.0 0.0 0.0" object="Crate">
+        </node>
+
+        <node name="Car_1" position="15.0 1.0 5.0" rotation="0.0 0.0 0.0 0.0" object="Vehicle">
+        </node>
+    </graph>
+</scene>
